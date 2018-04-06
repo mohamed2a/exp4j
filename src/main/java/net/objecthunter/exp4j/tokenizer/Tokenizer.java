@@ -247,24 +247,31 @@ public class Tokenizer {
     private Token parseNumberToken(final char firstChar) {
         final int offset = this.pos;
         int len = 1;
-        this.pos++;
-        if (isEndOfExpression(offset + len)) {
-            lastToken = new NumberToken(Double.parseDouble(String.valueOf(firstChar)));
-            return lastToken;
-        }
-        while (!isEndOfExpression(offset + len) &&
-                isNumeric(expression[offset + len], expression[offset + len - 1] == 'e' ||
-                        expression[offset + len - 1] == 'E')) {
-            len++;
+
+
+        if (!implicitMultiplication) {
+            return parseFunctionOrVariable();
+        } else {
             this.pos++;
+            if (isEndOfExpression(offset + len)) {
+                lastToken = new NumberToken(Double.parseDouble(String.valueOf(firstChar)));
+                return lastToken;
+            }
+            while (!isEndOfExpression(offset + len) &&
+                    isNumeric(expression[offset + len], expression[offset + len - 1] == 'e' ||
+                            expression[offset + len - 1] == 'E')) {
+                len++;
+                this.pos++;
+            }
+            // check if the e is at the end
+            if (expression[offset + len - 1] == 'e' || expression[offset + len - 1] == 'E') {
+                // since the e is at the end it's not part of the number and a rollback is necessary
+                len--;
+                pos--;
+            }
+            lastToken = new NumberToken(expression, offset, len);
         }
-        // check if the e is at the end
-        if (expression[offset + len - 1] == 'e' || expression[offset + len - 1] == 'E') {
-            // since the e is at the end it's not part of the number and a rollback is necessary
-            len--;
-            pos--;
-        }
-        lastToken = new NumberToken(expression, offset, len);
+
         return lastToken;
     }
 

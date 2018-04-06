@@ -48,6 +48,28 @@ public class TokenizerTest {
         assertNumberToken(tokenizer.nextToken(), 300d);
     }
 
+    @Test(expected = UnknownFunctionOrVariableException.class)
+    public void testTokenization3_1() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("3A2",null, null, null, false);
+        Token t = tokenizer.nextToken();
+    }
+
+    @Test(expected = UnknownFunctionOrVariableException.class)
+    public void testTokenization3_2() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("A2",null, null, null, false);
+        Token t = tokenizer.nextToken();
+        assertVariableToken(t, "A2");
+    }
+
+    @Test
+    public void testTokenization3_3() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("3x2",null, null, new HashSet<String>(Arrays.asList("x2")));
+        Token t = tokenizer.nextToken();
+        assertNumberToken(t, 3.0);
+        assertOperatorToken(tokenizer.nextToken(), "*", 2, Operator.PRECEDENCE_MULTIPLICATION);
+        assertVariableToken(tokenizer.nextToken(), "x2");
+    }
+
     @Test
     public void testTokenization4() throws Exception {
         final Tokenizer tokenizer = new Tokenizer("3+1",null, null, null);
