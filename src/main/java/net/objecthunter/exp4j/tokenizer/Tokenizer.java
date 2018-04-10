@@ -157,9 +157,37 @@ public class Tokenizer {
             this.pos++;
         }
         testPos = offset + len - 1;
-        while (!isEndOfExpression(testPos) &&
-                isVariableOrFunctionCharacter(expression[testPos])) {
-            String name = new String(expression, offset, len);
+
+        if (implicitMultiplication) {
+            while (!isEndOfExpression(testPos) &&
+                    isVariableOrFunctionCharacter(expression[testPos])) {
+                String name = new String(expression, offset, len);
+                if (variableNames != null && variableNames.contains(name)) {
+                    lastValidLen = len;
+                    lastValidToken = new VariableToken(name);
+                } else {
+                    final Function f = getFunction(name);
+                    if (f != null) {
+                        lastValidLen = len;
+                        lastValidToken = new FunctionToken(f);
+                    }
+                }
+                len++;
+                testPos = offset + len - 1;
+            }
+            if (lastValidToken == null) {
+                throw new UnknownFunctionOrVariableException(new String(expression), pos, len);
+            }
+            pos += lastValidLen;
+        } else {
+            String name = "";
+            while (!isEndOfExpression(testPos) &&
+                    isVariableOrFunctionCharacter(expression[testPos])) {
+                name = new String(expression, offset, len);
+                len++;
+                testPos = offset + len - 1;
+            }
+
             if (variableNames != null && variableNames.contains(name)) {
                 lastValidLen = len;
                 lastValidToken = new VariableToken(name);
@@ -168,15 +196,13 @@ public class Tokenizer {
                 if (f != null) {
                     lastValidLen = len;
                     lastValidToken = new FunctionToken(f);
+                } else {
+                    throw new UnknownFunctionOrVariableException(new String(expression), pos, len);
                 }
             }
-            len++;
-            testPos = offset + len - 1;
+            pos += lastValidLen - 1;
         }
-        if (lastValidToken == null) {
-            throw new UnknownFunctionOrVariableException(new String(expression), pos, len);
-        }
-        pos += lastValidLen;
+
         lastToken = lastValidToken;
         return lastToken;
     }
@@ -247,30 +273,42 @@ public class Tokenizer {
     private Token parseNumberToken(final char firstChar) {
         final int offset = this.pos;
         int len = 1;
+        int invalidTokenLen = 0;
+        this.pos++;
 
-
-        if (!implicitMultiplication) {
-            return parseFunctionOrVariable();
-        } else {
-            this.pos++;
-            if (isEndOfExpression(offset + len)) {
-                lastToken = new NumberToken(Double.parseDouble(String.valueOf(firstChar)));
-                return lastToken;
-            }
-            while (!isEndOfExpression(offset + len) &&
-                    isNumeric(expression[offset + len], expression[offset + len - 1] == 'e' ||
-                            expression[offset + len - 1] == 'E')) {
-                len++;
-                this.pos++;
-            }
-            // check if the e is at the end
-            if (expression[offset + len - 1] == 'e' || expression[offset + len - 1] == 'E') {
-                // since the e is at the end it's not part of the number and a rollback is necessary
-                len--;
-                pos--;
-            }
-            lastToken = new NumberToken(expression, offset, len);
+        if (isEndOfExpression(offset + len)) {
+            lastToken = new NumberToken(Double.parseDouble(String.valueOf(firstChar)));
+            return lastToken;
         }
+        while (!isEndOfExpression(offset + len)) {
+            if (isNumeric(expression[offset + len], expression[offset + len - 1] == 'e' ||
+                    expression[offset + len - 1] == 'E')) {
+
+            } else if (isAlphabetic(expression[offset + len]) && !implicitMultiplication) {
+                invalidTokenLen++;
+            } else {
+                break;
+            }
+            len++;
+            this.pos++;
+        }
+
+        if (invalidTokenLen > 0 && !implicitMultiplication) {
+            String name = new String(expression, offset, len);
+            throw new IllegalArgumentException("Invalid token : " + name);
+        } else {
+            len-=invalidTokenLen;
+            this.pos-=invalidTokenLen;
+        }
+
+        // check if the e is at the end
+        if (expression[offset + len - 1] == 'e' || expression[offset + len - 1] == 'E') {
+            // since the e is at the end it's not part of the number and a rollback is necessary
+            len--;
+            pos--;
+        }
+
+        lastToken = new NumberToken(expression, offset, len);
 
         return lastToken;
     }

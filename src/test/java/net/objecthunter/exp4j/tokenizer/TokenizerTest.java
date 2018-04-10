@@ -48,27 +48,65 @@ public class TokenizerTest {
         assertNumberToken(tokenizer.nextToken(), 300d);
     }
 
-    @Test(expected = UnknownFunctionOrVariableException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testTokenization3_1() throws Exception {
-        final Tokenizer tokenizer = new Tokenizer("3A2",null, null, null, false);
+        final Tokenizer tokenizer = new Tokenizer("3A2+1",null, null, null, false);
         Token t = tokenizer.nextToken();
     }
 
     @Test(expected = UnknownFunctionOrVariableException.class)
     public void testTokenization3_2() throws Exception {
-        final Tokenizer tokenizer = new Tokenizer("A2",null, null, null, false);
+        final Tokenizer tokenizer = new Tokenizer("A2+3",null, null, null, false);
         Token t = tokenizer.nextToken();
         assertVariableToken(t, "A2");
     }
 
     @Test
     public void testTokenization3_3() throws Exception {
-        final Tokenizer tokenizer = new Tokenizer("3x2",null, null, new HashSet<String>(Arrays.asList("x2")));
+        final Tokenizer tokenizer = new Tokenizer("3+x2+43x2",null, null, new HashSet<String>(Arrays.asList("x2")), false);
         Token t = tokenizer.nextToken();
         assertNumberToken(t, 3.0);
-        assertOperatorToken(tokenizer.nextToken(), "*", 2, Operator.PRECEDENCE_MULTIPLICATION);
-        assertVariableToken(tokenizer.nextToken(), "x2");
+        t = tokenizer.nextToken();
     }
+
+    @Test
+    public void testTokenization3_4() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("3 + 2",null, null, new HashSet<String>(Arrays.asList("x2")), true);
+        Token t = tokenizer.nextToken();
+        assertNumberToken(t, 3.0);
+        assertOperatorToken(tokenizer.nextToken(), "+", 2, Operator.PRECEDENCE_ADDITION);
+        assertNumberToken(tokenizer.nextToken(), 2.0);
+    }
+
+    @Test
+    public void testTokenization3_6() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("x24",null, null, new HashSet<String>(Arrays.asList("x2")));
+
+        assertTrue(tokenizer.hasNext());
+        assertVariableToken(tokenizer.nextToken(), "x2");
+
+        assertTrue(tokenizer.hasNext());
+        assertOperatorToken(tokenizer.nextToken(), "*", 2, Operator.PRECEDENCE_MULTIPLICATION);
+
+        assertTrue(tokenizer.hasNext());
+        assertNumberToken(tokenizer.nextToken(), 4d);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTokenization3_7() throws Exception {
+        final Tokenizer tokenizer = new Tokenizer("x24",null, null, new HashSet<String>(Arrays.asList("x2")), false);
+
+        assertTrue(tokenizer.hasNext());
+        assertVariableToken(tokenizer.nextToken(), "x2");
+
+        assertTrue(tokenizer.hasNext());
+        Token t = tokenizer.nextToken();
+        assertOperatorToken(tokenizer.nextToken(), "*", 2, Operator.PRECEDENCE_MULTIPLICATION);
+
+        assertTrue(tokenizer.hasNext());
+        assertNumberToken(tokenizer.nextToken(), 4d);
+    }
+
 
     @Test
     public void testTokenization4() throws Exception {
@@ -242,7 +280,8 @@ public class TokenizerTest {
         assertFunctionToken(tokenizer.nextToken(), "log", 1);
 
         assertTrue(tokenizer.hasNext());
-        assertOpenParenthesesToken(tokenizer.nextToken());
+        Token t = tokenizer.nextToken();
+        assertOpenParenthesesToken(t);
 
         assertTrue(tokenizer.hasNext());
         assertNumberToken(tokenizer.nextToken(), 1d);

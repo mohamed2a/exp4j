@@ -167,6 +167,14 @@ public class ExpressionTest {
 
     }
 
+    @Test
+    public void testAddition() {
+        Expression e = new ExpressionBuilder("3+1")
+                .build();
+        assertEquals(3 + 1, e.evaluate(), 4d);
+
+    }
+
     @Test(expected = ArithmeticException.class)
     public void testInvalidCotangent1() {
         Expression e = new ExpressionBuilder("cot(0)")
