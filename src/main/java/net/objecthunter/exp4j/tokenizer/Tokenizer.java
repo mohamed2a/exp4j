@@ -293,9 +293,8 @@ public class Tokenizer {
             this.pos++;
         }
 
-        if (invalidTokenLen > 0 && !implicitMultiplication) {
-            String name = new String(expression, offset, len);
-            throw new IllegalArgumentException("Invalid token : " + name);
+        if (invalidTokenLen > 0) {
+            throw new InvalidVariableException(new String(expression), offset, len);
         } else {
             len-=invalidTokenLen;
             this.pos-=invalidTokenLen;

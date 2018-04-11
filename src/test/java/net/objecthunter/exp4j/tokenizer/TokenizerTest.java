@@ -280,8 +280,7 @@ public class TokenizerTest {
         assertFunctionToken(tokenizer.nextToken(), "log", 1);
 
         assertTrue(tokenizer.hasNext());
-        Token t = tokenizer.nextToken();
-        assertOpenParenthesesToken(t);
+        assertOpenParenthesesToken(tokenizer.nextToken());
 
         assertTrue(tokenizer.hasNext());
         assertNumberToken(tokenizer.nextToken(), 1d);
